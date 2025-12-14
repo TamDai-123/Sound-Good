@@ -48,9 +48,9 @@ body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#
 <body>
 <div class="container">
 <div class="header">
-    <img src="img/logo.png" alt="Left Logo" class="logo">
-    <img src="img/title.png" alt="SoundGood" class="title-img">
-    <img src="img/logo.png" alt="Right Logo" class="logo">
+    <img src="img/2.png" alt="Left Logo" class="logo">
+    <img src="img/1.png" alt="SoundGood" class="title-img">
+    <img src="img/3.png" alt="Right Logo" class="logo">
 </div>
 <div class="content">
 <div class="title">ประวัติ</div>
