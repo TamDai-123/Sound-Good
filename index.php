@@ -36,7 +36,7 @@ body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#
 
 /* โลโก้ซ้าย */
 .logo-left {
-    width: 40px;
+    width: 70px;
     height: auto;
 }
 
@@ -48,7 +48,7 @@ body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#
 
 /* โลโก้ขวา */
 .logo-right {
-    width: 55px;
+    width: 80px;
     height: auto;
 }
 </style>
