@@ -28,14 +28,29 @@ body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#
 .download-btn { display:block; margin:10px auto 0 auto; padding:10px 20px; background:#2563eb; color:white; border:none; border-radius:10px; cursor:pointer; font-size:16px;}
 .download-btn:hover { background:#3b82f6;}
 .table-label { font-weight:600; margin-bottom:8px; font-size:16px;}
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo {
+    width: 50px;
+    height: auto;
+}
+
+.title-img {
+    height: 60px;   /* ปรับตามขนาดชื่อเว็บ */
+    width: auto;
+}
 </style>
 </head>
 <body>
 <div class="container">
 <div class="header">
-    <div class="logo">logo</div>
-    <h1>SoundGood</h1>
-    <div class="logo">logo</div>
+    <img src="img/logo.png" alt="Left Logo" class="logo">
+    <img src="img/title.png" alt="SoundGood" class="title-img">
+    <img src="img/logo.png" alt="Right Logo" class="logo">
 </div>
 <div class="content">
 <div class="title">ประวัติ</div>
