@@ -1,8 +1,8 @@
 <?php
-$servername = "localhost";
-$username = "root";
-$password = "zong2411";
-$dbname = "sound_good";
+$servername = "zpfp07ebhm2zgmrm.chr7pe7iynqr.eu-west-1.rds.amazonaws.com";
+$username = "g8garelqz3jv88e0";
+$password = "q9cts0ci024183yp";
+$dbname = "imb2cytjma8phph4";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {
