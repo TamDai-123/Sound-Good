@@ -34,24 +34,34 @@ body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#
     justify-content: space-between;
 }
 
-.logo {
-    width: 50px;
+/* โลโก้ซ้าย */
+.logo-left {
+    width: 40px;
     height: auto;
 }
 
+/* รูปชื่อ SoundGood */
 .title-img {
-    height: 60px;   /* ปรับตามขนาดชื่อเว็บ */
-    width: auto;
+    width: 180px;   /* หรือใช้ height ก็ได้ */
+    height: auto;
+}
+
+/* โลโก้ขวา */
+.logo-right {
+    width: 55px;
+    height: auto;
 }
 </style>
 </head>
 <body>
 <div class="container">
+
 <div class="header">
-    <img src="img/2.png" alt="Left Logo" class="logo">
-    <img src="img/1.png" alt="SoundGood" class="title-img">
-    <img src="img/3.png" alt="Right Logo" class="logo">
+    <img src="img/2.png"  alt="Left Logo"  class="logo-left">
+    <img src="img/1.png"      alt="SoundGood"  class="title-img">
+    <img src="img/3.png" alt="Right Logo" class="logo-right">
 </div>
+
 <div class="content">
 <div class="title">ประวัติ</div>
 <div id="rounds-container"></div>
