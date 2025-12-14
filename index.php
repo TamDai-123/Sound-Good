@@ -36,7 +36,7 @@ body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#
 
 /* โลโก้ซ้าย */
 .logo-left {
-    width: 70px;
+    width: 80px;
     height: auto;
 }
 
@@ -48,7 +48,7 @@ body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#
 
 /* โลโก้ขวา */
 .logo-right {
-    width: 80px;
+    width: 90px;
     height: auto;
 }
 </style>
@@ -57,13 +57,15 @@ body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#
 <div class="container">
 
 <div class="header">
-    <img src="img/2.png"  alt="Left Logo"  class="logo-left">
-    <img src="img/1.png"      alt="SoundGood"  class="title-img">
+    <a href="index.php">
+        <img src="img/2.png" class="logo-left">
+    </a>
+    <img src="img/name.png"      alt="SoundGood"  class="title-img">
     <img src="img/3.png" alt="Right Logo" class="logo-right">
 </div>
 
 <div class="content">
-<div class="title">ประวัติ</div>
+<div class="title">HISTORY</div>
 <div id="rounds-container"></div>
 </div>
 </div>
@@ -190,6 +192,11 @@ async function loadData() {
 }
 
 loadData();
+
+// รีเฟรชข้อมูลทุก 10 วินาที (ไม่ reload หน้า)
+setInterval(() => {
+    loadData();
+}, 10000);
 </script>
 </body>
 </html>
