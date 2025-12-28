@@ -59,7 +59,7 @@ while (count($leftData) && count($rightData)) {
             // ชุดนี้ไม่ครบ → ข้ามไปเริ่ม while รอบใหม่
             $currentRound = [];
             $roundStartTime = null;
-            continue 2;
+            break 2;
         }
 
         $left  = $leftData[$leftIndex];
@@ -78,6 +78,10 @@ while (count($leftData) && count($rightData)) {
             abs($leftTime  - $roundStartTime) > $TIME_LIMIT ||
             abs($rightTime - $roundStartTime) > $TIME_LIMIT
         ) {
+            // ทิ้งข้อมูลที่เก่าที่สุดออก 1 ตัว เพื่อขยับหน้าต่างเวลา
+            array_shift($leftData);
+            array_shift($rightData);
+
             // รีเซ็ตรอบ แล้วลองเริ่มใหม่จากข้อมูลถัดไป
             $currentRound = [];
             $roundStartTime = null;
