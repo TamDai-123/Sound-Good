@@ -110,31 +110,25 @@ async function loadData() {
 
         let currentRound = [];
         
-        data.forEach((round, idx) => {
+        data.forEach((item) => {
             let tempLeft = [];
             let tempRight = [];
             let has250 = false;
 
-            round.forEach(row => {
-                // เช็คว่าเป็น 250 หรือไม่
-                if (row.left.frequency_hz === 250 || row.right.frequency_hz === 250) {
-                    // ถ้ามีข้อมูลใน currentRound ให้ตรวจสอบและแสดงผล
-                    if (currentRound.length > 0) {
-                        processRound(currentRound);
-                    }
-                    currentRound = []; // เริ่มนับใหม่
-                    has250 = true; // เจอ 250
+            // เช็คว่ามีข้อมูลครบถ้วน
+            if (item.frequency_hz === 250) {
+                // ถ้ามีข้อมูลใน currentRound ให้ตรวจสอบและแสดงผล
+                if (currentRound.length > 0) {
+                    processRound(currentRound);
                 }
+                currentRound = []; // เริ่มนับใหม่
+                has250 = true; // เจอ 250
+            }
 
-                if (has250) {
-                    if (requiredFrequencies.includes(row.left.frequency_hz)) {
-                        tempLeft.push(row.left);
-                    }
-                    if (requiredFrequencies.includes(row.right.frequency_hz)) {
-                        tempRight.push(row.right);
-                    }
-                }
-            });
+            if (has250) {
+                tempLeft.push(item.left);
+                tempRight.push(item.right);
+            }
 
             // ถ้ามีข้อมูลครบถ้วนใน currentRound
             if (tempLeft.length > 0 && tempRight.length > 0) {
@@ -227,7 +221,7 @@ async function loadData() {
                 const downloadBtn = document.createElement('button');
                 downloadBtn.classList.add('download-btn');
                 downloadBtn.textContent = 'ดาวน์โหลดข้อมูลรอบนี้';
-                downloadBtn.onclick = () => downloadCSV(round, idx + 1);
+                downloadBtn.onclick = () => downloadCSV(round, round[0].left[0].day);
                 content.appendChild(downloadBtn);
 
                 roundDiv.appendChild(content);
