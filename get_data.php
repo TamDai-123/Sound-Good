@@ -13,8 +13,9 @@ if ($conn->connect_error) {
 }
 
 // ===== LOAD DATA =====
-$leftRes  = $conn->query("SELECT * FROM left_ear ORDER BY day ASC LIMIT 400");
-$rightRes = $conn->query("SELECT * FROM right_ear ORDER BY day ASC LIMIT 400");
+// จำกัดจำนวนเพื่อกัน 503 (ปรับได้)
+$leftRes  = $conn->query("SELECT * FROM left_ear  ORDER BY day ASC LIMIT 500");
+$rightRes = $conn->query("SELECT * FROM right_ear ORDER BY day ASC LIMIT 500");
 
 $leftData  = [];
 $rightData = [];
@@ -24,15 +25,16 @@ while ($row = $rightRes->fetch_assoc()) $rightData[] = $row;
 
 // ===== CONFIG =====
 $FREQUENCIES = [250, 500, 1000, 2000, 4000, 8000];
-$TIME_LIMIT  = 10 * 60; // 10 นาที
+$TIME_LIMIT  = 10 * 60; // 10 นาที (วินาที)
 
 $rounds = [];
 
 // ===== MAIN LOGIC =====
 while (count($leftData) && count($rightData)) {
 
-    $currentRound = [];
+    $currentRound   = [];
     $roundStartTime = null;
+    $failed         = false;
 
     foreach ($FREQUENCIES as $freq) {
 
@@ -54,12 +56,12 @@ while (count($leftData) && count($rightData)) {
             }
         }
 
-        // ถ้าขาด → ไม่ครบ 1 รอบ
+        // ❌ frequency ขาด → ทิ้งข้อมูลเก่าที่สุด แล้วเริ่มใหม่
         if ($leftIndex === null || $rightIndex === null) {
-            // ชุดนี้ไม่ครบ → ข้ามไปเริ่ม while รอบใหม่
-            $currentRound = [];
-            $roundStartTime = null;
-            break 2;
+            array_shift($leftData);
+            array_shift($rightData);
+            $failed = true;
+            break;
         }
 
         $left  = $leftData[$leftIndex];
@@ -73,40 +75,40 @@ while (count($leftData) && count($rightData)) {
             $roundStartTime = min($leftTime, $rightTime);
         }
 
-        // เช็คช่วงเวลา
+        // ❌ เวลาเกิน → ทิ้งข้อมูลเก่าที่สุด แล้วเริ่มใหม่
         if (
             abs($leftTime  - $roundStartTime) > $TIME_LIMIT ||
             abs($rightTime - $roundStartTime) > $TIME_LIMIT
         ) {
-            // ทิ้งข้อมูลที่เก่าที่สุดออก 1 ตัว เพื่อขยับหน้าต่างเวลา
             array_shift($leftData);
             array_shift($rightData);
-
-            // รีเซ็ตรอบ แล้วลองเริ่มใหม่จากข้อมูลถัดไป
-            $currentRound = [];
-            $roundStartTime = null;
-            continue 2; // ข้ามไปเริ่ม while รอบใหม่
+            $failed = true;
+            break;
         }
 
+        // ผ่าน → เก็บข้อมูล
         $currentRound[] = [
             'frequency_hz' => $freq,
             'left'  => $left,
             'right' => $right
         ];
 
-        // ลบออกเพื่อไม่ให้ใช้ซ้ำ
+        // ใช้แล้วลบออก (กันซ้ำ)
         array_splice($leftData,  $leftIndex,  1);
         array_splice($rightData, $rightIndex, 1);
+    }
+
+    // ถ้ารอบนี้พัง → ไปเริ่ม while ใหม่
+    if ($failed) {
+        continue;
     }
 
     // ถ้าครบ 6 ความถี่ → นับเป็น 1 รอบ
     if (count($currentRound) === count($FREQUENCIES)) {
         $rounds[] = $currentRound;
-    } else {
-        break;
     }
 }
 
 // ===== OUTPUT =====
-echo json_encode($rounds, JSON_UNESCAPED_UNICODE);
+echo json_encode($rounds, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 $conn->close();
