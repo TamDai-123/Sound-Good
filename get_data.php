@@ -56,7 +56,10 @@ while (count($leftData) && count($rightData)) {
 
         // ถ้าขาด → ไม่ครบ 1 รอบ
         if ($leftIndex === null || $rightIndex === null) {
-            break 2;
+            // ชุดนี้ไม่ครบ → ข้ามไปเริ่ม while รอบใหม่
+            $currentRound = [];
+            $roundStartTime = null;
+            continue 2;
         }
 
         $left  = $leftData[$leftIndex];
