@@ -29,45 +29,26 @@ body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#
 .download-btn { display:block; margin:10px auto 0 auto; padding:10px 20px; background:#2563eb; color:white; border:none; border-radius:10px; cursor:pointer; font-size:16px;}
 .download-btn:hover { background:#3b82f6;}
 .table-label { font-weight:600; margin-bottom:8px; font-size:16px;}
-.header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-/* โลโก้ซ้าย */
-.logo-left {
-    width: 80px;
-    height: auto;
-}
-
-/* รูปชื่อ SoundGood */
-.title-img {
-    width: 180px;   /* หรือใช้ height ก็ได้ */
-    height: auto;
-}
-
-/* โลโก้ขวา */
-.logo-right {
-    width: 90px;
-    height: auto;
-}
+.logo-left { width: 80px; height: auto; }
+.title-img { width: 180px; height: auto; }
+.logo-right { width: 90px; height: auto; }
+.error-msg { color: red; text-align: center; padding: 20px; }
+.loading { text-align: center; padding: 40px; font-size: 18px; color: #2563eb; }
 </style>
 </head>
 <body>
 <div class="container">
-
 <div class="header">
     <a href="index.php">
         <img src="img/2.png" class="logo-left">
     </a>
-    <img src="img/name.png"      alt="SoundGood"  class="title-img">
+    <img src="img/name.png" alt="SoundGood" class="title-img">
     <img src="img/3.png" alt="Right Logo" class="logo-right">
 </div>
 
 <div class="content">
 <div class="title">HISTORY</div>
-<div id="rounds-container"></div>
+<div id="rounds-container"><div class="loading">กำลังโหลดข้อมูล...</div></div>
 </div>
 </div>
 
@@ -78,7 +59,6 @@ function toggleRound(header) {
     content.classList.toggle('show');
 }
 
-// ฟังก์ชันดาวน์โหลด CSV
 function downloadCSV(roundData, roundNumber) {
     let csv = 'frequency_hz,db_25,db_40,db_55,db_70,db_90,db_100,ear,day\n';
     roundData.forEach(row => {
@@ -102,18 +82,26 @@ async function loadData() {
         const res = await fetch('get_data.php');
         const data = await res.json();
 
+        console.log('Data received:', data); // Debug
+
         const container = document.getElementById('rounds-container');
         container.innerHTML = '';
 
+        if (!Array.isArray(data) || data.length === 0) {
+            container.innerHTML = '<div class="error-msg">ไม่พบข้อมูล</div>';
+            return;
+        }
+
         data.forEach((round, idx) => {
+            if (!Array.isArray(round) || round.length === 0) return;
+
             const roundDiv = document.createElement('div');
             roundDiv.classList.add('round');
 
-            // แสดงรอบ + วันเวลาแถวแรก (ไม่ใช้วงเล็บ)
-            const firstDay = round[0]?.left?.day ?? '-';
+            const firstDay = round[0]?.left?.day || '-';
             const header = document.createElement('div');
             header.classList.add('round-header');
-            header.textContent = `รอบที่ ${idx+1} ${firstDay}`;
+            header.textContent = `รอบที่ ${idx+1} - ${firstDay}`;
             header.onclick = () => toggleRound(header);
             roundDiv.appendChild(header);
 
@@ -135,15 +123,17 @@ async function loadData() {
                 </thead>
                 <tbody>`;
             round.forEach(row => {
-                leftTable += `<tr>
-                    <td>${row.left.frequency_hz}</td>
-                    <td>${row.left.db_25}</td>
-                    <td>${row.left.db_40}</td>
-                    <td>${row.left.db_55}</td>
-                    <td>${row.left.db_70}</td>
-                    <td>${row.left.db_90}</td>
-                    <td>${row.left.db_100}</td>
-                </tr>`;
+                if (row.left) {
+                    leftTable += `<tr>
+                        <td>${row.left.frequency_hz || '-'}</td>
+                        <td>${row.left.db_25 || '-'}</td>
+                        <td>${row.left.db_40 || '-'}</td>
+                        <td>${row.left.db_55 || '-'}</td>
+                        <td>${row.left.db_70 || '-'}</td>
+                        <td>${row.left.db_90 || '-'}</td>
+                        <td>${row.left.db_100 || '-'}</td>
+                    </tr>`;
+                }
             });
             leftTable += `</tbody></table>`;
 
@@ -162,21 +152,22 @@ async function loadData() {
                 </thead>
                 <tbody>`;
             round.forEach(row => {
-                rightTable += `<tr>
-                    <td>${row.right.frequency_hz}</td>
-                    <td>${row.right.db_25}</td>
-                    <td>${row.right.db_40}</td>
-                    <td>${row.right.db_55}</td>
-                    <td>${row.right.db_70}</td>
-                    <td>${row.right.db_90}</td>
-                    <td>${row.right.db_100}</td>
-                </tr>`;
+                if (row.right) {
+                    rightTable += `<tr>
+                        <td>${row.right.frequency_hz || '-'}</td>
+                        <td>${row.right.db_25 || '-'}</td>
+                        <td>${row.right.db_40 || '-'}</td>
+                        <td>${row.right.db_55 || '-'}</td>
+                        <td>${row.right.db_70 || '-'}</td>
+                        <td>${row.right.db_90 || '-'}</td>
+                        <td>${row.right.db_100 || '-'}</td>
+                    </tr>`;
+                }
             });
             rightTable += `</tbody></table>`;
 
             content.innerHTML = leftTable + rightTable;
 
-            // ปุ่มดาวน์โหลด
             const downloadBtn = document.createElement('button');
             downloadBtn.classList.add('download-btn');
             downloadBtn.textContent = 'ดาวน์โหลดข้อมูลรอบนี้';
@@ -189,15 +180,13 @@ async function loadData() {
 
     } catch(err) {
         console.error('Error loading data:', err);
+        document.getElementById('rounds-container').innerHTML = 
+            '<div class="error-msg">เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + err.message + '</div>';
     }
 }
 
 loadData();
-
-// รีเฟรชข้อมูลทุก 10 วินาที (ไม่ reload หน้า)
-setInterval(() => {
-    loadData();
-}, 10000);
+setInterval(loadData, 10000);
 </script>
 </body>
 </html>

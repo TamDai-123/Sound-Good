@@ -24,7 +24,7 @@ while ($row = $rightRes->fetch_assoc()) $rightData[] = $row;
 
 // ===== CONFIG =====
 $FREQUENCIES = [250, 500, 1000, 2000, 4000, 8000];
-$TIME_LIMIT  = 30 * 60; // เพิ่มเป็น 30 นาที เพื่อรองรับข้อมูลที่ห่างกันหน่อย
+$TIME_LIMIT  = 30 * 60; // 30 นาที
 
 $rounds = [];
 $leftPointer = 0;
@@ -37,9 +37,7 @@ while ($leftPointer < count($leftData) && $rightPointer < count($rightData)) {
     $roundStartTime = null;
     $tempLeftPointer  = $leftPointer;
     $tempRightPointer = $rightPointer;
-    $foundFrequencies = [];
 
-    // พยายามหาครบ 6 ความถี่
     foreach ($FREQUENCIES as $freq) {
         
         $leftFound = null;
@@ -47,12 +45,11 @@ while ($leftPointer < count($leftData) && $rightPointer < count($rightData)) {
         $leftIdx = null;
         $rightIdx = null;
 
-        // หา left จากตำแหน่งปัจจุบันไปข้างหน้า
+        // หา left
         for ($i = $tempLeftPointer; $i < count($leftData); $i++) {
             if ((int)$leftData[$i]['frequency_hz'] === $freq) {
                 $leftTime = strtotime($leftData[$i]['day']);
                 
-                // ถ้ายังไม่กำหนดเวลาเริ่ม หรือไม่เกิน TIME_LIMIT
                 if ($roundStartTime === null || abs($leftTime - $roundStartTime) <= $TIME_LIMIT) {
                     $leftFound = $leftData[$i];
                     $leftIdx = $i;
@@ -61,13 +58,12 @@ while ($leftPointer < count($leftData) && $rightPointer < count($rightData)) {
                     }
                     break;
                 } else {
-                    // เกินเวลาแล้ว ไม่ต้องหาต่อ
                     break;
                 }
             }
         }
 
-        // หา right จากตำแหน่งปัจจุบันไปข้างหน้า
+        // หา right
         for ($i = $tempRightPointer; $i < count($rightData); $i++) {
             if ((int)$rightData[$i]['frequency_hz'] === $freq) {
                 $rightTime = strtotime($rightData[$i]['day']);
@@ -85,9 +81,7 @@ while ($leftPointer < count($leftData) && $rightPointer < count($rightData)) {
             }
         }
 
-        // ถ้าหาไม่เจอทั้ง 2 ฝั่ง = รอบนี้ล้มเหลว
         if ($leftFound === null || $rightFound === null) {
-            // ข้ามไปแถวถัดไป (ฝั่งที่มีเวลาน้อยกว่า)
             $leftTime = ($leftPointer < count($leftData)) ? strtotime($leftData[$leftPointer]['day']) : PHP_INT_MAX;
             $rightTime = ($rightPointer < count($rightData)) ? strtotime($rightData[$rightPointer]['day']) : PHP_INT_MAX;
             
@@ -99,32 +93,42 @@ while ($leftPointer < count($leftData) && $rightPointer < count($rightData)) {
             break;
         }
 
-        // เก็บข้อมูล
+        // เก็บข้อมูลในรูปแบบที่ตรงกับ index.php
         $currentRound[] = [
             'frequency_hz' => $freq,
-            'left'  => $leftFound,
-            'right' => $rightFound
+            'left'  => [
+                'frequency_hz' => $leftFound['frequency_hz'],
+                'db_25'  => $leftFound['db_25'],
+                'db_40'  => $leftFound['db_40'],
+                'db_55'  => $leftFound['db_55'],
+                'db_70'  => $leftFound['db_70'],
+                'db_90'  => $leftFound['db_90'],
+                'db_100' => $leftFound['db_100'],
+                'day'    => $leftFound['day']
+            ],
+            'right' => [
+                'frequency_hz' => $rightFound['frequency_hz'],
+                'db_25'  => $rightFound['db_25'],
+                'db_40'  => $rightFound['db_40'],
+                'db_55'  => $rightFound['db_55'],
+                'db_70'  => $rightFound['db_70'],
+                'db_90'  => $rightFound['db_90'],
+                'db_100' => $rightFound['db_100'],
+                'day'    => $rightFound['day']
+            ]
         ];
 
-        // อัปเดต pointer ชั่วคราว
         $tempLeftPointer = $leftIdx + 1;
         $tempRightPointer = $rightIdx + 1;
     }
 
-    // ถ้าครบ 6 ความถี่ = success!
     if (count($currentRound) === count($FREQUENCIES)) {
         $rounds[] = $currentRound;
-        
-        // อัปเดต pointer จริง
         $leftPointer = $tempLeftPointer;
         $rightPointer = $tempRightPointer;
     }
 }
 
-// ===== OUTPUT =====
-echo json_encode([
-    'total_rounds' => count($rounds),
-    'rounds' => $rounds
-], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-
+// ส่งข้อมูลเป็น array ของ rounds
+echo json_encode($rounds, JSON_UNESCAPED_UNICODE);
 $conn->close();
