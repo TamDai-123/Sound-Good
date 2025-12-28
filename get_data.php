@@ -13,8 +13,8 @@ if ($conn->connect_error) {
 }
 
 // ===== LOAD DATA =====
-$leftRes  = $conn->query("SELECT * FROM left_ear ORDER BY day ASC");
-$rightRes = $conn->query("SELECT * FROM right_ear ORDER BY day ASC");
+$leftRes  = $conn->query("SELECT * FROM left_ear ORDER BY day ASC LIMIT 400");
+$rightRes = $conn->query("SELECT * FROM right_ear ORDER BY day ASC LIMIT 400");
 
 $leftData  = [];
 $rightData = [];
