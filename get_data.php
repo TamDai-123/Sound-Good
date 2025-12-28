@@ -75,7 +75,10 @@ while (count($leftData) && count($rightData)) {
             abs($leftTime  - $roundStartTime) > $TIME_LIMIT ||
             abs($rightTime - $roundStartTime) > $TIME_LIMIT
         ) {
-            break 2; // เวลาไม่ใกล้กัน → จบ
+            // รีเซ็ตรอบ แล้วลองเริ่มใหม่จากข้อมูลถัดไป
+            $currentRound = [];
+            $roundStartTime = null;
+            continue 2; // ข้ามไปเริ่ม while รอบใหม่
         }
 
         $currentRound[] = [
