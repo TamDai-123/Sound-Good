@@ -13,7 +13,6 @@ if ($conn->connect_error) {
 }
 
 // ===== LOAD DATA =====
-// จำกัดจำนวนเพื่อกัน 503 (ปรับได้)
 $leftRes  = $conn->query("SELECT * FROM left_ear  ORDER BY day ASC LIMIT 500");
 $rightRes = $conn->query("SELECT * FROM right_ear ORDER BY day ASC LIMIT 500");
 
@@ -34,14 +33,17 @@ while (count($leftData) && count($rightData)) {
 
     $currentRound   = [];
     $roundStartTime = null;
+    $usedLeftIndices  = [];
+    $usedRightIndices = [];
     $failed         = false;
+    $skipSide       = null; // 'left' หรือ 'right'
 
     foreach ($FREQUENCIES as $freq) {
 
         // หา left
         $leftIndex = null;
         foreach ($leftData as $i => $l) {
-            if ((int)$l['frequency_hz'] === $freq) {
+            if ((int)$l['frequency_hz'] === $freq && !in_array($i, $usedLeftIndices)) {
                 $leftIndex = $i;
                 break;
             }
@@ -50,15 +52,26 @@ while (count($leftData) && count($rightData)) {
         // หา right
         $rightIndex = null;
         foreach ($rightData as $i => $r) {
-            if ((int)$r['frequency_hz'] === $freq) {
+            if ((int)$r['frequency_hz'] === $freq && !in_array($i, $usedRightIndices)) {
                 $rightIndex = $i;
                 break;
             }
         }
 
-        // ❌ frequency ขาด → ทิ้งข้อมูลเก่าที่สุด แล้วเริ่มใหม่
-        if ($leftIndex === null || $rightIndex === null) {
+        // ❌ frequency ขาด → ทิ้งข้อมูลตัวแรกของฝั่งที่ขาด
+        if ($leftIndex === null && $rightIndex === null) {
+            // ทั้งสองฝั่งไม่มี freq นี้ → ทิ้งทั้งคู่
             array_shift($leftData);
+            array_shift($rightData);
+            $failed = true;
+            break;
+        } elseif ($leftIndex === null) {
+            // ขาดฝั่ง left → ทิ้ง left ตัวแรก
+            array_shift($leftData);
+            $failed = true;
+            break;
+        } elseif ($rightIndex === null) {
+            // ขาดฝั่ง right → ทิ้ง right ตัวแรก
             array_shift($rightData);
             $failed = true;
             break;
@@ -75,12 +88,13 @@ while (count($leftData) && count($rightData)) {
             $roundStartTime = min($leftTime, $rightTime);
         }
 
-        // ❌ เวลาเกิน → ทิ้งข้อมูลเก่าที่สุด แล้วเริ่มใหม่
-        if (
-            abs($leftTime  - $roundStartTime) > $TIME_LIMIT ||
-            abs($rightTime - $roundStartTime) > $TIME_LIMIT
-        ) {
+        // ❌ เวลาเกิน → ทิ้งข้อมูลฝั่งที่เก่ากว่า
+        if (abs($leftTime - $roundStartTime) > $TIME_LIMIT) {
             array_shift($leftData);
+            $failed = true;
+            break;
+        }
+        if (abs($rightTime - $roundStartTime) > $TIME_LIMIT) {
             array_shift($rightData);
             $failed = true;
             break;
@@ -93,9 +107,8 @@ while (count($leftData) && count($rightData)) {
             'right' => $right
         ];
 
-        // ใช้แล้วลบออก (กันซ้ำ)
-        array_splice($leftData,  $leftIndex,  1);
-        array_splice($rightData, $rightIndex, 1);
+        $usedLeftIndices[]  = $leftIndex;
+        $usedRightIndices[] = $rightIndex;
     }
 
     // ถ้ารอบนี้พัง → ไปเริ่ม while ใหม่
@@ -103,8 +116,19 @@ while (count($leftData) && count($rightData)) {
         continue;
     }
 
-    // ถ้าครบ 6 ความถี่ → นับเป็น 1 รอบ
+    // ถ้าครบ 6 ความถี่ → ลบข้อมูลที่ใช้แล้ว + นับเป็น 1 รอบ
     if (count($currentRound) === count($FREQUENCIES)) {
+        // ลบจากมากไปน้อย เพื่อไม่ให้ index เพี้ยน
+        rsort($usedLeftIndices);
+        rsort($usedRightIndices);
+        
+        foreach ($usedLeftIndices as $i) {
+            array_splice($leftData, $i, 1);
+        }
+        foreach ($usedRightIndices as $i) {
+            array_splice($rightData, $i, 1);
+        }
+
         $rounds[] = $currentRound;
     }
 }
