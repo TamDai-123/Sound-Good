@@ -13,8 +13,8 @@ if ($conn->connect_error) {
 }
 
 // ===== LOAD DATA =====
-$leftRes  = $conn->query("SELECT * FROM left_ear  ORDER BY day ASC LIMIT 500");
-$rightRes = $conn->query("SELECT * FROM right_ear ORDER BY day ASC LIMIT 500");
+$leftRes  = $conn->query("SELECT * FROM left_ear  ORDER BY day ASC");
+$rightRes = $conn->query("SELECT * FROM right_ear ORDER BY day ASC");
 
 $leftData  = [];
 $rightData = [];
@@ -24,115 +24,107 @@ while ($row = $rightRes->fetch_assoc()) $rightData[] = $row;
 
 // ===== CONFIG =====
 $FREQUENCIES = [250, 500, 1000, 2000, 4000, 8000];
-$TIME_LIMIT  = 10 * 60; // 10 นาที (วินาที)
+$TIME_LIMIT  = 30 * 60; // เพิ่มเป็น 30 นาที เพื่อรองรับข้อมูลที่ห่างกันหน่อย
 
 $rounds = [];
+$leftPointer = 0;
+$rightPointer = 0;
 
 // ===== MAIN LOGIC =====
-while (count($leftData) && count($rightData)) {
+while ($leftPointer < count($leftData) && $rightPointer < count($rightData)) {
 
     $currentRound   = [];
     $roundStartTime = null;
-    $usedLeftIndices  = [];
-    $usedRightIndices = [];
-    $failed         = false;
-    $skipSide       = null; // 'left' หรือ 'right'
+    $tempLeftPointer  = $leftPointer;
+    $tempRightPointer = $rightPointer;
+    $foundFrequencies = [];
 
+    // พยายามหาครบ 6 ความถี่
     foreach ($FREQUENCIES as $freq) {
+        
+        $leftFound = null;
+        $rightFound = null;
+        $leftIdx = null;
+        $rightIdx = null;
 
-        // หา left
-        $leftIndex = null;
-        foreach ($leftData as $i => $l) {
-            if ((int)$l['frequency_hz'] === $freq && !in_array($i, $usedLeftIndices)) {
-                $leftIndex = $i;
-                break;
+        // หา left จากตำแหน่งปัจจุบันไปข้างหน้า
+        for ($i = $tempLeftPointer; $i < count($leftData); $i++) {
+            if ((int)$leftData[$i]['frequency_hz'] === $freq) {
+                $leftTime = strtotime($leftData[$i]['day']);
+                
+                // ถ้ายังไม่กำหนดเวลาเริ่ม หรือไม่เกิน TIME_LIMIT
+                if ($roundStartTime === null || abs($leftTime - $roundStartTime) <= $TIME_LIMIT) {
+                    $leftFound = $leftData[$i];
+                    $leftIdx = $i;
+                    if ($roundStartTime === null) {
+                        $roundStartTime = $leftTime;
+                    }
+                    break;
+                } else {
+                    // เกินเวลาแล้ว ไม่ต้องหาต่อ
+                    break;
+                }
             }
         }
 
-        // หา right
-        $rightIndex = null;
-        foreach ($rightData as $i => $r) {
-            if ((int)$r['frequency_hz'] === $freq && !in_array($i, $usedRightIndices)) {
-                $rightIndex = $i;
-                break;
+        // หา right จากตำแหน่งปัจจุบันไปข้างหน้า
+        for ($i = $tempRightPointer; $i < count($rightData); $i++) {
+            if ((int)$rightData[$i]['frequency_hz'] === $freq) {
+                $rightTime = strtotime($rightData[$i]['day']);
+                
+                if ($roundStartTime === null || abs($rightTime - $roundStartTime) <= $TIME_LIMIT) {
+                    $rightFound = $rightData[$i];
+                    $rightIdx = $i;
+                    if ($roundStartTime === null) {
+                        $roundStartTime = $rightTime;
+                    }
+                    break;
+                } else {
+                    break;
+                }
             }
         }
 
-        // ❌ frequency ขาด → ทิ้งข้อมูลตัวแรกของฝั่งที่ขาด
-        if ($leftIndex === null && $rightIndex === null) {
-            // ทั้งสองฝั่งไม่มี freq นี้ → ทิ้งทั้งคู่
-            array_shift($leftData);
-            array_shift($rightData);
-            $failed = true;
-            break;
-        } elseif ($leftIndex === null) {
-            // ขาดฝั่ง left → ทิ้ง left ตัวแรก
-            array_shift($leftData);
-            $failed = true;
-            break;
-        } elseif ($rightIndex === null) {
-            // ขาดฝั่ง right → ทิ้ง right ตัวแรก
-            array_shift($rightData);
-            $failed = true;
+        // ถ้าหาไม่เจอทั้ง 2 ฝั่ง = รอบนี้ล้มเหลว
+        if ($leftFound === null || $rightFound === null) {
+            // ข้ามไปแถวถัดไป (ฝั่งที่มีเวลาน้อยกว่า)
+            $leftTime = ($leftPointer < count($leftData)) ? strtotime($leftData[$leftPointer]['day']) : PHP_INT_MAX;
+            $rightTime = ($rightPointer < count($rightData)) ? strtotime($rightData[$rightPointer]['day']) : PHP_INT_MAX;
+            
+            if ($leftTime <= $rightTime) {
+                $leftPointer++;
+            } else {
+                $rightPointer++;
+            }
             break;
         }
 
-        $left  = $leftData[$leftIndex];
-        $right = $rightData[$rightIndex];
-
-        $leftTime  = strtotime($left['day']);
-        $rightTime = strtotime($right['day']);
-
-        // กำหนดเวลาเริ่มรอบ
-        if ($roundStartTime === null) {
-            $roundStartTime = min($leftTime, $rightTime);
-        }
-
-        // ❌ เวลาเกิน → ทิ้งข้อมูลฝั่งที่เก่ากว่า
-        if (abs($leftTime - $roundStartTime) > $TIME_LIMIT) {
-            array_shift($leftData);
-            $failed = true;
-            break;
-        }
-        if (abs($rightTime - $roundStartTime) > $TIME_LIMIT) {
-            array_shift($rightData);
-            $failed = true;
-            break;
-        }
-
-        // ผ่าน → เก็บข้อมูล
+        // เก็บข้อมูล
         $currentRound[] = [
             'frequency_hz' => $freq,
-            'left'  => $left,
-            'right' => $right
+            'left'  => $leftFound,
+            'right' => $rightFound
         ];
 
-        $usedLeftIndices[]  = $leftIndex;
-        $usedRightIndices[] = $rightIndex;
+        // อัปเดต pointer ชั่วคราว
+        $tempLeftPointer = $leftIdx + 1;
+        $tempRightPointer = $rightIdx + 1;
     }
 
-    // ถ้ารอบนี้พัง → ไปเริ่ม while ใหม่
-    if ($failed) {
-        continue;
-    }
-
-    // ถ้าครบ 6 ความถี่ → ลบข้อมูลที่ใช้แล้ว + นับเป็น 1 รอบ
+    // ถ้าครบ 6 ความถี่ = success!
     if (count($currentRound) === count($FREQUENCIES)) {
-        // ลบจากมากไปน้อย เพื่อไม่ให้ index เพี้ยน
-        rsort($usedLeftIndices);
-        rsort($usedRightIndices);
-        
-        foreach ($usedLeftIndices as $i) {
-            array_splice($leftData, $i, 1);
-        }
-        foreach ($usedRightIndices as $i) {
-            array_splice($rightData, $i, 1);
-        }
-
         $rounds[] = $currentRound;
+        
+        // อัปเดต pointer จริง
+        $leftPointer = $tempLeftPointer;
+        $rightPointer = $tempRightPointer;
     }
 }
 
 // ===== OUTPUT =====
-echo json_encode($rounds, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+echo json_encode([
+    'total_rounds' => count($rounds),
+    'rounds' => $rounds
+], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+
 $conn->close();
