@@ -29,29 +29,6 @@ body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#
 .download-btn { display:block; margin:10px auto 0 auto; padding:10px 20px; background:#2563eb; color:white; border:none; border-radius:10px; cursor:pointer; font-size:16px;}
 .download-btn:hover { background:#3b82f6;}
 .table-label { font-weight:600; margin-bottom:8px; font-size:16px;}
-.header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-/* โลโก้ซ้าย */
-.logo-left {
-    width: 80px;
-    height: auto;
-}
-
-/* รูปชื่อ SoundGood */
-.title-img {
-    width: 180px;   /* หรือใช้ height ก็ได้ */
-    height: auto;
-}
-
-/* โลโก้ขวา */
-.logo-right {
-    width: 90px;
-    height: auto;
-}
 </style>
 </head>
 <body>
@@ -61,13 +38,13 @@ body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#
     <a href="index.php">
         <img src="img/2.png" class="logo-left">
     </a>
-    <img src="img/name.png"      alt="SoundGood"  class="title-img">
+    <img src="img/name.png" alt="SoundGood" class="title-img">
     <img src="img/3.png" alt="Right Logo" class="logo-right">
 </div>
 
 <div class="content">
-<div class="title">HISTORY</div>
-<div id="rounds-container"></div>
+    <div class="title">HISTORY</div>
+    <div id="rounds-container"></div>
 </div>
 </div>
 
@@ -82,7 +59,7 @@ function toggleRound(header) {
 function downloadCSV(roundData, roundNumber) {
     let csv = 'frequency_hz,db_25,db_40,db_55,db_70,db_90,db_100,ear,day\n';
     roundData.forEach(row => {
-        ['left','right'].forEach(ear => {
+        ['left', 'right'].forEach(ear => {
             const r = row[ear];
             csv += `${r.frequency_hz},${r.db_25},${r.db_40},${r.db_55},${r.db_70},${r.db_90},${r.db_100},${ear},${r.day}\n`;
         });
@@ -105,19 +82,16 @@ async function loadData() {
         const container = document.getElementById('rounds-container');
         container.innerHTML = '';
 
-        // ค่าที่ต้องการ
         const requiredFrequencies = [250, 500, 1000, 2000, 4000, 8000];
-
         let currentRound = [];
         
-        data.forEach((item) => {
+        data.forEach(item => {
             let tempLeft = [];
             let tempRight = [];
             let has250 = false;
 
-            // เช็คว่ามีข้อมูลครบถ้วน
+            // เช็คว่าเป็น 250 หรือไม่
             if (item.frequency_hz === 250) {
-                // ถ้ามีข้อมูลใน currentRound ให้ตรวจสอบและแสดงผล
                 if (currentRound.length > 0) {
                     processRound(currentRound);
                 }
