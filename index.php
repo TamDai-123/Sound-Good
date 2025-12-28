@@ -29,6 +29,29 @@ body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#
 .download-btn { display:block; margin:10px auto 0 auto; padding:10px 20px; background:#2563eb; color:white; border:none; border-radius:10px; cursor:pointer; font-size:16px;}
 .download-btn:hover { background:#3b82f6;}
 .table-label { font-weight:600; margin-bottom:8px; font-size:16px;}
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* โลโก้ซ้าย */
+.logo-left {
+    width: 80px;
+    height: auto;
+}
+
+/* รูปชื่อ SoundGood */
+.title-img {
+    width: 180px;   /* หรือใช้ height ก็ได้ */
+    height: auto;
+}
+
+/* โลโก้ขวา */
+.logo-right {
+    width: 90px;
+    height: auto;
+}
 </style>
 </head>
 <body>
@@ -38,13 +61,13 @@ body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#
     <a href="index.php">
         <img src="img/2.png" class="logo-left">
     </a>
-    <img src="img/name.png" alt="SoundGood" class="title-img">
+    <img src="img/name.png"      alt="SoundGood"  class="title-img">
     <img src="img/3.png" alt="Right Logo" class="logo-right">
 </div>
 
 <div class="content">
-    <div class="title">HISTORY</div>
-    <div id="rounds-container"></div>
+<div class="title">HISTORY</div>
+<div id="rounds-container"></div>
 </div>
 </div>
 
@@ -59,7 +82,7 @@ function toggleRound(header) {
 function downloadCSV(roundData, roundNumber) {
     let csv = 'frequency_hz,db_25,db_40,db_55,db_70,db_90,db_100,ear,day\n';
     roundData.forEach(row => {
-        ['left', 'right'].forEach(ear => {
+        ['left','right'].forEach(ear => {
             const r = row[ear];
             csv += `${r.frequency_hz},${r.db_25},${r.db_40},${r.db_55},${r.db_70},${r.db_90},${r.db_100},${ear},${r.day}\n`;
         });
@@ -82,128 +105,89 @@ async function loadData() {
         const container = document.getElementById('rounds-container');
         container.innerHTML = '';
 
-        const requiredFrequencies = [250, 500, 1000, 2000, 4000, 8000];
-        let currentRound = [];
-        
-        data.forEach(item => {
-            let tempLeft = [];
-            let tempRight = [];
-            let has250 = false;
+        data.forEach((round, idx) => {
+            const roundDiv = document.createElement('div');
+            roundDiv.classList.add('round');
 
-            // เช็คว่าเป็น 250 หรือไม่
-            if (item.frequency_hz === 250) {
-                if (currentRound.length > 0) {
-                    processRound(currentRound);
-                }
-                currentRound = []; // เริ่มนับใหม่
-                has250 = true; // เจอ 250
-            }
+            // แสดงรอบ + วันเวลาแถวแรก (ไม่ใช้วงเล็บ)
+            const firstDay = round[0]?.left?.day ?? '-';
+            const header = document.createElement('div');
+            header.classList.add('round-header');
+            header.textContent = `รอบที่ ${idx+1} ${firstDay}`;
+            header.onclick = () => toggleRound(header);
+            roundDiv.appendChild(header);
 
-            if (has250) {
-                tempLeft.push(item.left);
-                tempRight.push(item.right);
-            }
+            const content = document.createElement('div');
+            content.classList.add('round-content');
 
-            // ถ้ามีข้อมูลครบถ้วนใน currentRound
-            if (tempLeft.length > 0 && tempRight.length > 0) {
-                currentRound.push({ left: tempLeft, right: tempRight });
-            }
+            // ตาราง Left Ear
+            let leftTable = `<div class="table-label">Left Ear</div><table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ความถี่ (Hz)</th>
+                        <th>db_25</th>
+                        <th>db_40</th>
+                        <th>db_55</th>
+                        <th>db_70</th>
+                        <th>db_90</th>
+                        <th>db_100</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            round.forEach(row => {
+                leftTable += `<tr>
+                    <td>${row.left.frequency_hz}</td>
+                    <td>${row.left.db_25}</td>
+                    <td>${row.left.db_40}</td>
+                    <td>${row.left.db_55}</td>
+                    <td>${row.left.db_70}</td>
+                    <td>${row.left.db_90}</td>
+                    <td>${row.left.db_100}</td>
+                </tr>`;
+            });
+            leftTable += `</tbody></table>`;
+
+            // ตาราง Right Ear
+            let rightTable = `<div class="table-label">Right Ear</div><table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ความถี่ (Hz)</th>
+                        <th>db_25</th>
+                        <th>db_40</th>
+                        <th>db_55</th>
+                        <th>db_70</th>
+                        <th>db_90</th>
+                        <th>db_100</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            round.forEach(row => {
+                rightTable += `<tr>
+                    <td>${row.right.frequency_hz}</td>
+                    <td>${row.right.db_25}</td>
+                    <td>${row.right.db_40}</td>
+                    <td>${row.right.db_55}</td>
+                    <td>${row.right.db_70}</td>
+                    <td>${row.right.db_90}</td>
+                    <td>${row.right.db_100}</td>
+                </tr>`;
+            });
+            rightTable += `</tbody></table>`;
+
+            content.innerHTML = leftTable + rightTable;
+
+            // ปุ่มดาวน์โหลด
+            const downloadBtn = document.createElement('button');
+            downloadBtn.classList.add('download-btn');
+            downloadBtn.textContent = 'ดาวน์โหลดข้อมูลรอบนี้';
+            downloadBtn.onclick = () => downloadCSV(round, idx+1);
+            content.appendChild(downloadBtn);
+
+            roundDiv.appendChild(content);
+            container.appendChild(roundDiv);
         });
 
-        // ตรวจสอบรอบสุดท้าย
-        if (currentRound.length > 0) {
-            processRound(currentRound);
-        }
-
-        function processRound(round) {
-            const leftFrequencies = new Set(round[0].left.map(row => row.frequency_hz));
-            const rightFrequencies = new Set(round[0].right.map(row => row.frequency_hz));
-
-            // ตรวจสอบว่ามีค่าครบถ้วนหรือไม่
-            const isComplete = requiredFrequencies.every(freq => leftFrequencies.has(freq) && rightFrequencies.has(freq));
-
-            if (isComplete) {
-                const roundDiv = document.createElement('div');
-                roundDiv.classList.add('round');
-
-                const header = document.createElement('div');
-                header.classList.add('round-header');
-                header.textContent = `รอบที่ ${round[0].left[0].day}`;
-                header.onclick = () => toggleRound(header);
-                roundDiv.appendChild(header);
-
-                const content = document.createElement('div');
-                content.classList.add('round-content');
-
-                // ตาราง Left Ear
-                let leftTable = `<div class="table-label">Left Ear</div><table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>ความถี่ (Hz)</th>
-                            <th>db_25</th>
-                            <th>db_40</th>
-                            <th>db_55</th>
-                            <th>db_70</th>
-                            <th>db_90</th>
-                            <th>db_100</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-                round[0].left.forEach(row => {
-                    leftTable += `<tr>
-                        <td>${row.frequency_hz}</td>
-                        <td>${row.db_25}</td>
-                        <td>${row.db_40}</td>
-                        <td>${row.db_55}</td>
-                        <td>${row.db_70}</td>
-                        <td>${row.db_90}</td>
-                        <td>${row.db_100}</td>
-                    </tr>`;
-                });
-                leftTable += `</tbody></table>`;
-
-                // ตาราง Right Ear
-                let rightTable = `<div class="table-label">Right Ear</div><table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>ความถี่ (Hz)</th>
-                            <th>db_25</th>
-                            <th>db_40</th>
-                            <th>db_55</th>
-                            <th>db_70</th>
-                            <th>db_90</th>
-                            <th>db_100</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-                round[0].right.forEach(row => {
-                    rightTable += `<tr>
-                        <td>${row.frequency_hz}</td>
-                        <td>${row.db_25}</td>
-                        <td>${row.db_40}</td>
-                        <td>${row.db_55}</td>
-                        <td>${row.db_70}</td>
-                        <td>${row.db_90}</td>
-                        <td>${row.db_100}</td>
-                    </tr>`;
-                });
-                rightTable += `</tbody></table>`;
-
-                content.innerHTML = leftTable + rightTable;
-
-                // ปุ่มดาวน์โหลด
-                const downloadBtn = document.createElement('button');
-                downloadBtn.classList.add('download-btn');
-                downloadBtn.textContent = 'ดาวน์โหลดข้อมูลรอบนี้';
-                downloadBtn.onclick = () => downloadCSV(round, round[0].left[0].day);
-                content.appendChild(downloadBtn);
-
-                roundDiv.appendChild(content);
-                container.appendChild(roundDiv);
-            }
-        }
-
-    } catch (err) {
+    } catch(err) {
         console.error('Error loading data:', err);
     }
 }
